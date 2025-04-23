@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EnglishPro - English Learning Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loader"></div>
+        <p>Loading amazing content...</p>
+    </div>
+
+    <header>
+        <div class="container">
+            <div class="logo">
+                <h1>EnglishPro</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="/" class="active"><i class="fas fa-home"></i> Home</a></li>
+                    <li><a href="/voice-to-text"><i class="fas fa-microphone"></i> Voice to Text</a></li>
+                    <li><a href="/audio-to-text"><i class="fas fa-file-audio"></i> Audio to Text</a></li>
+                    <li><a href="/image-to-text"><i class="fas fa-image"></i> Image to Text</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <div class="hero-content">
+                    <h2>Enhance Your English Learning Journey</h2>
+                    <p>Our cutting-edge tools help you practice and improve your English skills for IELTS and beyond.</p>
+                    <div class="hero-buttons">
+                        <a href="/voice-to-text" class="btn btn-primary">Start with Voice to Text</a>
+                        <a href="/image-to-text" class="btn btn-secondary">Try Image to Text</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="container">
+                <h2 class="section-title">Our Features</h2>
+                <div class="feature-cards">
+                    <div class="feature-card" onclick="navigateTo('/voice-to-text')">
+                        <div class="feature-icon">
+                            <i class="fas fa-microphone"></i>
+                        </div>
+                        <h3>Voice to Text</h3>
+                        <p>Record your voice and instantly convert it to text. Perfect for practicing speaking and checking your pronunciation.</p>
+                    </div>
+                    <div class="feature-card" onclick="navigateTo('/audio-to-text')">
+                        <div class="feature-icon">
+                            <i class="fas fa-file-audio"></i>
+                        </div>
+                        <h3>Audio to Text</h3>
+                        <p>Upload MP3 files and convert them to text. Ideal for transcribing lectures or podcasts for study materials.</p>
+                    </div>
+                    <div class="feature-card" onclick="navigateTo('/image-to-text')">
+                        <div class="feature-icon">
+                            <i class="fas fa-image"></i>
+                        </div>
+                        <h3>Image to Text</h3>
+                        <p>Extract text from images. Perfect for IELTS writing practice with printed materials.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="how-it-works">
+            <div class="container">
+                <h2 class="section-title">How It Works</h2>
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <h3>Choose a Tool</h3>
+                        <p>Select from our Voice to Text, Audio to Text, or Image to Text tools.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <h3>Upload or Record</h3>
+                        <p>Record your voice directly or upload audio files and images.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <h3>Get Results</h3>
+                        <p>Receive accurate text conversions to improve your English skills.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 EnglishPro. All rights reserved.</p>
+            <div class="social-links">
+                <a href="#"><i class="fab fa-facebook"></i></a>
+                <a href="#"><i class="fab fa-twitter"></i></a>
+                <a href="#"><i class="fab fa-instagram"></i></a>
+                <a href="#"><i class="fab fa-youtube"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

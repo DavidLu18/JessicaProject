@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice to Text - EnglishPro</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loader"></div>
+        <p>Loading amazing content...</p>
+    </div>
+
+    <header>
+        <div class="container">
+            <div class="logo">
+                <h1>EnglishPro</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
+                    <li><a href="/voice-to-text" class="active"><i class="fas fa-microphone"></i> Voice to Text</a></li>
+                    <li><a href="/audio-to-text"><i class="fas fa-file-audio"></i> Audio to Text</a></li>
+                    <li><a href="/image-to-text"><i class="fas fa-image"></i> Image to Text</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="page-header">
+            <div class="container">
+                <h2><i class="fas fa-microphone"></i> Voice to Text Converter</h2>
+                <p>Record your voice and convert it to text. Perfect for practicing English speaking!</p>
+            </div>
+        </section>
+
+        <section class="voice-recorder">
+            <div class="container">
+                <div class="recorder-container">
+                    <div class="recorder-controls">
+                        <button id="startRecording" class="btn btn-primary">
+                            <i class="fas fa-microphone"></i> Start Recording
+                        </button>
+                        <button id="stopRecording" class="btn btn-danger" disabled>
+                            <i class="fas fa-stop"></i> Stop Recording
+                        </button>
+                    </div>
+                    
+                    <div class="recording-status">
+                        <div class="recording-indicator" id="recordingIndicator">
+                            <div class="recording-waves">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                            <p id="recordingStatus">Ready to record</p>
+                        </div>
+                        <div class="recording-timer" id="recordingTimer">00:00</div>
+                    </div>
+                    
+                    <div class="result-container">
+                        <h3>Transcript</h3>
+                        <div class="text-result" id="textResult">
+                            <p class="placeholder">Your transcript will appear here after recording...</p>
+                        </div>
+                        <div class="result-actions">
+                            <button id="copyText" class="btn btn-secondary" disabled>
+                                <i class="fas fa-copy"></i> Copy Text
+                            </button>
+                            <button id="downloadText" class="btn btn-secondary" disabled>
+                                <i class="fas fa-download"></i> Download Text
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="tips">
+            <div class="container">
+                <h3>Tips for Better Voice Recognition</h3>
+                <ul class="tips-list">
+                    <li><i class="fas fa-volume-up"></i> Speak clearly and at a moderate pace</li>
+                    <li><i class="fas fa-volume-down"></i> Minimize background noise</li>
+                    <li><i class="fas fa-microphone-alt"></i> Use a good quality microphone</li>
+                    <li><i class="fas fa-language"></i> Practice with IELTS-style speaking topics</li>
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 EnglishPro. All rights reserved.</p>
+            <div class="social-links">
+                <a href="#"><i class="fab fa-facebook"></i></a>
+                <a href="#"><i class="fab fa-twitter"></i></a>
+                <a href="#"><i class="fab fa-instagram"></i></a>
+                <a href="#"><i class="fab fa-youtube"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/voice-to-text.js') }}"></script>
+</body>
+</html>

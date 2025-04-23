@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio to Text - EnglishPro</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loader"></div>
+        <p>Loading amazing content...</p>
+    </div>
+
+    <header>
+        <div class="container">
+            <div class="logo">
+                <h1>EnglishPro</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
+                    <li><a href="/voice-to-text"><i class="fas fa-microphone"></i> Voice to Text</a></li>
+                    <li><a href="/audio-to-text" class="active"><i class="fas fa-file-audio"></i> Audio to Text</a></li>
+                    <li><a href="/image-to-text"><i class="fas fa-image"></i> Image to Text</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="page-header">
+            <div class="container">
+                <h2><i class="fas fa-file-audio"></i> Audio to Text Converter</h2>
+                <p>Upload MP3 files and convert them to text. Perfect for transcribing English lectures and podcasts!</p>
+            </div>
+        </section>
+
+        <section class="audio-uploader">
+            <div class="container">
+                <div class="uploader-container">
+                    <form id="audioUploadForm" enctype="multipart/form-data">
+                        <div class="file-upload-container">
+                            <div class="file-upload-area" id="dropArea">
+                                <input type="file" id="audioFile" name="audio" accept=".mp3,.wav" class="file-input" />
+                                <div class="upload-icon">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                </div>
+                                <div class="upload-text">
+                                    <p>Drag & drop your audio file here</p>
+                                    <p>or</p>
+                                    <button type="button" class="btn btn-primary" id="browseButton">
+                                        <i class="fas fa-folder-open"></i> Browse Files
+                                    </button>
+                                </div>
+                                <p class="file-types">Supported formats: MP3, WAV</p>
+                            </div>
+                            <div class="selected-file" id="selectedFile">
+                                <p>No file selected</p>
+                            </div>
+                        </div>
+                        
+                        <div class="upload-actions">
+                            <button type="submit" class="btn btn-primary" id="convertAudio" disabled>
+                                <i class="fas fa-exchange-alt"></i> Convert to Text
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="conversion-progress" id="conversionProgress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <p id="progressStatus">Processing audio...</p>
+                    </div>
+                    
+                    <div class="result-container">
+                        <h3>Transcript</h3>
+                        <div class="text-result" id="textResult">
+                            <p class="placeholder">Your transcript will appear here after conversion...</p>
+                        </div>
+                        <div class="result-actions">
+                            <button id="copyText" class="btn btn-secondary" disabled>
+                                <i class="fas fa-copy"></i> Copy Text
+                            </button>
+                            <button id="downloadText" class="btn btn-secondary" disabled>
+                                <i class="fas fa-download"></i> Download Text
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="tips">
+            <div class="container">
+                <h3>Tips for Better Audio Transcription</h3>
+                <ul class="tips-list">
+                    <li><i class="fas fa-music"></i> Use high-quality audio files for better results</li>
+                    <li><i class="fas fa-volume-up"></i> Clear audio with minimal background noise works best</li>
+                    <li><i class="fas fa-file-audio"></i> Shorter audio files (under 10 minutes) are processed faster</li>
+                    <li><i class="fas fa-language"></i> Standard English accents are recognized more accurately</li>
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 EnglishPro. All rights reserved.</p>
+            <div class="social-links">
+                <a href="#"><i class="fab fa-facebook"></i></a>
+                <a href="#"><i class="fab fa-twitter"></i></a>
+                <a href="#"><i class="fab fa-instagram"></i></a>
+                <a href="#"><i class="fab fa-youtube"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/audio-to-text.js') }}"></script>
+</body>
+</html>
