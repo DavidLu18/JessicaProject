@@ -6,17 +6,20 @@
     <title>Voice to Text - EnglishPro</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Add Google Fonts for better typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="description" content="Convert your voice to text with our advanced AI-powered speech recognition. Perfect for English learning and IELTS practice.">
 </head>
 <body>
     <div class="loading-screen" id="loadingScreen">
         <div class="loader"></div>
-        <p>Loading amazing content...</p>
+        <p>🎤 Preparing voice recognition...</p>
     </div>
 
     <header>
         <div class="container">
             <div class="logo">
-                <h1>EnglishPro</h1>
+                <h1>✨ EnglishPro</h1>
             </div>
             <nav>
                 <ul>
@@ -33,13 +36,15 @@
         <section class="page-header">
             <div class="container">
                 <h2><i class="fas fa-microphone"></i> Voice to Text Converter</h2>
-                <p>Record your voice and convert it to text. Perfect for practicing English speaking!</p>
+                <p>🎯 Record your voice and convert it to text with AI-powered speech recognition. Perfect for practicing English speaking and IELTS preparation!</p>
             </div>
         </section>
 
         <section class="voice-recorder">
             <div class="container">
                 <div class="recorder-container">
+                    <!-- Status and help will be dynamically inserted here by JavaScript -->
+                    
                     <div class="recorder-controls">
                         <button id="startRecording" class="btn btn-primary">
                             <i class="fas fa-microphone"></i> Start Recording
@@ -58,15 +63,20 @@
                                 <span></span>
                                 <span></span>
                             </div>
-                            <p id="recordingStatus">Ready to record</p>
+                            <p id="recordingStatus">🎤 Ready to record</p>
                         </div>
                         <div class="recording-timer" id="recordingTimer">00:00</div>
                     </div>
                     
+                    <!-- Keyboard shortcuts info -->
+                    <div style="text-align: center; margin: 1rem 0; padding: 1rem; background: rgba(102, 126, 234, 0.1); border-radius: 12px; font-size: 0.9rem; color: #4a5568;">
+                        <strong>⌨️ Keyboard Shortcuts:</strong> Press <kbd style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-family: monospace;">Space</kbd> to start/stop recording • <kbd style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-family: monospace;">Ctrl+C</kbd> to copy transcript
+                    </div>
+                    
                     <div class="result-container">
-                        <h3>Transcript</h3>
+                        <h3><i class="fas fa-file-text"></i> Transcript</h3>
                         <div class="text-result" id="textResult">
-                            <p class="placeholder">Your transcript will appear here after recording...</p>
+                            <p class="placeholder">🔤 Your transcript will appear here after recording. Start by clicking the "Start Recording" button above!</p>
                         </div>
                         <div class="result-actions">
                             <button id="copyText" class="btn btn-secondary" disabled>
@@ -83,30 +93,108 @@
 
         <section class="tips">
             <div class="container">
-                <h3>Tips for Better Voice Recognition</h3>
+                <h3><i class="fas fa-lightbulb"></i> Tips for Better Voice Recognition</h3>
                 <ul class="tips-list">
-                    <li><i class="fas fa-volume-up"></i> Speak clearly and at a moderate pace</li>
-                    <li><i class="fas fa-volume-down"></i> Minimize background noise</li>
-                    <li><i class="fas fa-microphone-alt"></i> Use a good quality microphone</li>
-                    <li><i class="fas fa-language"></i> Practice with IELTS-style speaking topics</li>
+                    <li><i class="fas fa-volume-up"></i> <strong>Speak clearly</strong> and at a moderate pace for best results</li>
+                    <li><i class="fas fa-volume-down"></i> <strong>Minimize background noise</strong> - find a quiet environment</li>
+                    <li><i class="fas fa-microphone-alt"></i> <strong>Use a good quality microphone</strong> or headset if available</li>
+                    <li><i class="fas fa-language"></i> <strong>Practice with IELTS topics</strong> to improve your speaking skills</li>
+                    <li><i class="fas fa-clock"></i> <strong>Start with short recordings</strong> and gradually increase duration</li>
+                    <li><i class="fas fa-globe"></i> <strong>Choose the right language</strong> from the settings above</li>
                 </ul>
             </div>
         </section>
+
+        <!-- Troubleshooting Section -->
+        <section class="tips" style="background: rgba(245, 101, 101, 0.05);">
+            <div class="container">
+                <h3><i class="fas fa-question-circle"></i> Having Issues?</h3>
+                <ul class="tips-list">
+                    <li><i class="fas fa-shield-alt"></i> <strong>HTTPS Required:</strong> Make sure you're on a secure connection (https://)</li>
+                    <li><i class="fas fa-browser"></i> <strong>Browser Support:</strong> Use Chrome, Firefox, Safari, or Edge for best compatibility</li>
+                    <li><i class="fas fa-lock"></i> <strong>Microphone Permission:</strong> Click "Allow" when prompted for microphone access</li>
+                    <li><i class="fas fa-refresh"></i> <strong>Page Refresh:</strong> Try refreshing the page if you encounter issues</li>
+                    <li><i class="fas fa-headphones"></i> <strong>External Microphone:</strong> Consider using an external microphone for better quality</li>
+                    <li><i class="fas fa-cog"></i> <strong>System Settings:</strong> Check your computer's microphone settings</li>
+                </ul>
+            </div>
+        </section>
+
+        <div class="page-description">
+            <p class="description-text">
+                🎤 Transform your speech into text with advanced voice recognition technology. 
+                Perfect for students, professionals, and language learners.
+            </p>
+            
+            <!-- HTTPS Notice -->
+            <div class="https-notice" id="httpsNotice" style="display: none;">
+                <div class="notice-content">
+                    <h4>🔒 HTTPS Required for Microphone Access</h4>
+                    <p>For security reasons, modern browsers require HTTPS to access the microphone.</p>
+                    <div class="https-instructions">
+                        <p><strong>Please use one of these secure URLs:</strong></p>
+                        <ul>
+                            <li>🔐 <strong>https://localhost:5000</strong> (recommended for local access)</li>
+                            <li>🔐 <strong>https://127.0.0.1:5000</strong> (alternative local URL)</li>
+                        </ul>
+                        <p class="note">💡 The server will automatically generate an SSL certificate when you restart it.</p>
+                    </div>
+                    <button class="btn btn-primary https-redirect-btn" onclick="redirectToHTTPS()">
+                        🔄 Switch to HTTPS Now
+                    </button>
+                </div>
+            </div>
+        </div>
     </main>
 
     <footer>
         <div class="container">
-            <p>&copy; 2025 EnglishPro. All rights reserved.</p>
+            <p>&copy; 2025 EnglishPro. All rights reserved. Made with ❤️ for English learners.</p>
             <div class="social-links">
-                <a href="#"><i class="fab fa-facebook"></i></a>
-                <a href="#"><i class="fab fa-twitter"></i></a>
-                <a href="#"><i class="fab fa-instagram"></i></a>
-                <a href="#"><i class="fab fa-youtube"></i></a>
+                <a href="#" title="Facebook"><i class="fab fa-facebook"></i></a>
+                <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
+                <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+                <a href="#" title="YouTube"><i class="fab fa-youtube"></i></a>
             </div>
         </div>
     </footer>
 
+    <!-- Scripts -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="{{ url_for('static', filename='js/voice-to-text.js') }}"></script>
+    
+    <!-- Add simple error boundary -->
+    <script>
+        window.addEventListener('error', function(e) {
+            console.error('JavaScript Error:', e.error);
+            // Show user-friendly error message
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: rgba(245, 101, 101, 0.9);
+                color: white;
+                padding: 1rem;
+                border-radius: 8px;
+                z-index: 10001;
+                max-width: 300px;
+                font-size: 0.9rem;
+            `;
+            errorDiv.innerHTML = `
+                <strong>⚠️ Error occurred:</strong><br>
+                Please refresh the page and try again.
+                <button onclick="this.parentElement.remove()" style="float: right; background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem;">&times;</button>
+            `;
+            document.body.appendChild(errorDiv);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (errorDiv.parentElement) {
+                    errorDiv.remove();
+                }
+            }, 5000);
+        });
+    </script>
 </body>
 </html>

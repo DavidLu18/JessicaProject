@@ -1,114 +1,138 @@
-# EnglishPro - English Learning Platform
+# 🎤 EnglishPro - Voice to Text Application
 
-This web-based application provides tools for English language learning, particularly targeted at IELTS preparation and practice.
+English learning platform with advanced voice recognition, audio-to-text, and image-to-text features.
 
-## Features
+## 🚨 Fixing HTTPS Error
 
-1. **Voice to Text Conversion**
-   - Record your voice and convert it to text in real-time
-   - Perfect for practicing speaking skills and checking pronunciation
+The error you're seeing is because modern browsers require HTTPS for microphone access. Here's how to fix it:
 
-2. **Audio to Text Conversion**
-   - Upload MP3 files and convert them to text
-   - Useful for transcribing lectures, podcasts, and study materials
+### Quick Fix (Recommended)
 
-3. **Image to Text (OCR)**
-   - Extract text from images
-   - Ideal for IELTS writing practice with printed materials
+1. **Install SSL support:**
+   ```bash
+   pip install cryptography
+   ```
 
-## Technologies Used
+2. **Restart the server:**
+   ```bash
+   python app.py
+   ```
 
-- **Backend**: Python with Flask
-- **Frontend**: HTML, CSS, JavaScript (Vanilla JS)
-- **Libraries**:
-  - SpeechRecognition for audio processing
-  - Pytesseract for OCR functionality
-  - Pydub for MP3 handling
+3. **Access via HTTPS:**
+   - Open: `https://localhost:5000`
+   - Or: `https://127.0.0.1:5000`
 
-## Installation
+4. **Accept SSL certificate:**
+   - Click "Advanced" → "Proceed to localhost (unsafe)"
+   - This is safe for local development
 
-1. Clone the repository:
-```
-git clone <repository-url>
-cd english-learning-platform
-```
+### Alternative: Complete Setup
 
-2. Set up a virtual environment:
-```
-python -m venv venv
-```
+1. **Install all dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-3. Activate the virtual environment:
+2. **Run the application:**
+   ```bash
+   python app.py
+   ```
 
-On Windows:
-```
-venv\Scripts\activate
-```
+3. **Access securely:**
+   - HTTPS: `https://localhost:5000`
+   - HTTP (limited): `http://localhost:5000`
 
-On macOS/Linux:
-```
-source venv/bin/activate
-```
+## 🎯 Features
 
-4. Install dependencies:
-```
-pip install -r requirements.txt
-```
+- **🎤 Voice to Text**: Advanced speech recognition with 15+ languages
+- **🔊 Audio to Text**: Upload audio files for transcription
+- **📷 Image to Text**: OCR text extraction from images
+- **🎨 Beautiful UI**: Modern glass morphism design with custom color palette
+- **🔧 Advanced Controls**: Quality settings, duration management, language selection
 
-5. Install Tesseract-OCR (required for image-to-text functionality):
+## 🛠️ Technical Details
 
-On Windows:
-- Download and install from: https://github.com/UB-Mannheim/tesseract/wiki
-- Add the installation path to your system PATH
+### Voice Recognition Features:
+- Real-time waveform visualization
+- Multi-language support (Vietnamese, English, Chinese, etc.)
+- Quality selection (Standard/High/Ultra)
+- Duration controls (1-10 minutes)
+- Keyboard shortcuts (Space = record, Ctrl+C = copy)
 
-On macOS:
-```
-brew install tesseract
-```
+### Browser Compatibility:
+- ✅ Chrome (Recommended)
+- ✅ Firefox
+- ✅ Edge
+- ✅ Safari
+- ⚠️ Requires HTTPS for microphone access
 
-On Linux:
-```
-sudo apt install tesseract-ocr
-```
+## 🎨 Color Palette
 
-## Running the Application
+- **Maroon (#690B22)**: Primary dark elements
+- **Coral (#E07A5F)**: Accent highlights
+- **Cream (#F1E3D3)**: Light backgrounds
+- **Dark Green (#1B4D3E)**: Secondary elements
 
-1. Start the Flask server:
-```
-python app.py
-```
+## 🔧 Troubleshooting
 
-2. Open your browser and navigate to:
-```
-http://127.0.0.1:5000/
-```
+### Microphone Issues:
+1. Ensure HTTPS is being used
+2. Grant microphone permissions
+3. Check browser compatibility
+4. Test microphone in system settings
 
-## Usage
+### SSL Certificate Issues:
+1. Install cryptography: `pip install cryptography`
+2. Restart the server
+3. Accept the self-signed certificate
+4. Clear browser cache if needed
 
-### Voice to Text
-1. Navigate to the Voice to Text page
-2. Click "Start Recording" and speak into your microphone
-3. Click "Stop Recording" when finished
-4. View your transcribed text
+### Performance Tips:
+- Use Chrome for best performance
+- Enable hardware acceleration
+- Close unnecessary browser tabs
+- Use wired internet connection
 
-### Audio to Text
-1. Navigate to the Audio to Text page
-2. Upload an MP3 or WAV file
-3. Click "Convert to Text"
-4. View your transcribed text
+## 📱 Usage Instructions
 
-### Image to Text
-1. Navigate to the Image to Text page
-2. Upload an image containing text
-3. Click "Extract Text"
-4. View the extracted text
+### Voice to Text:
+1. Select your language
+2. Choose quality setting
+3. Click microphone button or press Space
+4. Speak clearly into microphone
+5. Press Space again to stop
+6. Copy results with Ctrl+C
 
-## Project Structure
+### Audio Upload:
+1. Go to "Audio to Text" tab
+2. Upload your audio file
+3. Wait for processing
+4. Download the transcript
 
-- `app.py` - Main Flask application
-- `templates/` - HTML templates
-- `static/` - Static files
-  - `css/` - Stylesheets
-  - `js/` - JavaScript files
-  - `images/` - Image assets
-- `uploads/` - Temporary folder for uploaded files
+### Image OCR:
+1. Go to "Image to Text" tab
+2. Upload your image
+3. Wait for text extraction
+4. Copy the extracted text
+
+## 🚀 Development
+
+Built with:
+- **Backend**: Flask, Python
+- **Frontend**: HTML5, CSS3, JavaScript
+- **Audio**: Web Audio API, MediaRecorder
+- **Styling**: Glass morphism, CSS animations
+- **Security**: HTTPS, SSL certificates
+
+---
+
+## 📞 Support
+
+If you encounter any issues:
+
+1. **Check HTTPS**: Make sure you're using `https://localhost:5000`
+2. **Update browser**: Use the latest version of Chrome/Firefox/Edge
+3. **Grant permissions**: Allow microphone access when prompted
+4. **Check dependencies**: Install all requirements from `requirements.txt`
+
+**Happy learning! 🎓**
