@@ -1,6 +1,8 @@
 // Enhanced Image to Text functionality for EnglishPro with improved error handling
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🖼️ EnglishPro Image-to-Text initialized');
+    
     // DOM Elements
     const dropArea = document.getElementById('dropArea');
     const imageFile = document.getElementById('imageFile');
@@ -13,59 +15,124 @@ document.addEventListener('DOMContentLoaded', function() {
     const conversionProgress = document.getElementById('conversionProgress');
     const progressFill = document.getElementById('progressFill');
     const progressStatus = document.getElementById('progressStatus');
+    const progressPercentage = document.getElementById('progressPercentage');
     const textResult = document.getElementById('textResult');
     const copyTextBtn = document.getElementById('copyText');
     const downloadTextBtn = document.getElementById('downloadText');
+    const retryExtractionBtn = document.getElementById('retryExtraction');
     const uploadForm = document.getElementById('imageUploadForm');
     const formatOptions = document.getElementsByName('formatOption');
+    const systemStatus = document.getElementById('systemStatus');
+    const imageInfo = document.getElementById('imageInfo');
+    const charCount = document.getElementById('charCount');
+    const wordCount = document.getElementById('wordCount');
+    const confidenceLevel = document.getElementById('confidenceLevel');
+    const confidenceIndicator = document.getElementById('confidenceIndicator');
 
-    // Store extracted text globally
+    // Store extracted text and processing data
     let extractedText = '';
     let processingAbortController = null;
+    let currentImageFile = null;
+    let ocrData = null;
 
-    // Enhanced Event Listeners with performance optimizations
-    browseButton.addEventListener('click', () => imageFile.click());
-    imageFile.addEventListener('change', handleFileSelect);
-    removeImageBtn.addEventListener('click', removeImage);
-    
-    // Optimized drag and drop with passive listeners
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, preventDefaults, { passive: false });
-    });
-    
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropArea.addEventListener(eventName, highlight, { passive: true });
-    });
-    
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, unhighlight, { passive: true });
-    });
-    
-    dropArea.addEventListener('drop', handleDrop, false);
-    
-    // Form submission with enhanced error handling
-    uploadForm.addEventListener('submit', handleSubmit);
-    
-    // Copy and download buttons with improved feedback
-    copyTextBtn.addEventListener('click', copyText);
-    downloadTextBtn.addEventListener('click', downloadText);
-    
-    // Format options with immediate feedback
-    formatOptions.forEach(option => {
-        option.addEventListener('change', formatText);
-    });
+    // Initialize the application
+    initializeImageToText();
 
-    // Keyboard shortcuts for better UX
-    document.addEventListener('keydown', (e) => {
-        if (e.ctrlKey && e.key === 'Enter' && !extractTextBtn.disabled) {
-            handleSubmit(e);
+    function initializeImageToText() {
+        checkSystemStatus();
+        setupEventListeners();
+        setupDragAndDrop();
+        resetUI();
+    }
+
+    async function checkSystemStatus() {
+        try {
+            const statusIcon = systemStatus.querySelector('.status-icon');
+            const statusText = systemStatus.querySelector('.status-text');
+            
+            statusIcon.textContent = '🔄';
+            statusIcon.className = 'status-icon checking';
+            statusText.textContent = 'Checking OCR service...';
+            
+            const response = await fetch('/api/health');
+            const data = await response.json();
+            
+            if (data.status === 'healthy' && data.services.image_processing === 'active') {
+                statusIcon.textContent = '✅';
+                statusIcon.className = 'status-icon ready';
+                statusText.textContent = 'OCR service ready';
+                
+                setTimeout(() => {
+                    systemStatus.style.opacity = '0';
+                    setTimeout(() => systemStatus.style.display = 'none', 300);
+                }, 2000);
+            } else {
+                throw new Error('Service not healthy');
+            }
+        } catch (error) {
+            const statusIcon = systemStatus.querySelector('.status-icon');
+            const statusText = systemStatus.querySelector('.status-text');
+            
+            statusIcon.textContent = '❌';
+            statusIcon.className = 'status-icon error';
+            statusText.innerHTML = `
+                OCR service unavailable. 
+                <button onclick="location.reload()" style="margin-left: 10px; padding: 4px 8px; border: 1px solid; border-radius: 4px; background: transparent; color: inherit; cursor: pointer;">
+                    🔄 Retry
+                </button>
+            `;
+            
+            // Disable extraction button
+            extractTextBtn.disabled = true;
+            extractTextBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Service Unavailable';
         }
-        if (e.key === 'Delete' && imagePreviewContainer.classList.contains('show')) {
-            removeImage();
-        }
-    });
+    }
 
-    // Functions with enhanced error handling
+    function setupEventListeners() {
+        browseButton.addEventListener('click', () => imageFile.click());
+        imageFile.addEventListener('change', handleFileSelect);
+        removeImageBtn.addEventListener('click', removeImage);
+        uploadForm.addEventListener('submit', handleSubmit);
+        copyTextBtn.addEventListener('click', copyText);
+        downloadTextBtn.addEventListener('click', downloadText);
+        retryExtractionBtn.addEventListener('click', retryExtraction);
+        
+        // Format options
+        formatOptions.forEach(option => {
+            option.addEventListener('change', formatText);
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter' && !extractTextBtn.disabled) {
+                handleSubmit(e);
+            }
+            if (e.key === 'Delete' && imagePreviewContainer.style.display !== 'none') {
+                removeImage();
+            }
+            if (e.ctrlKey && e.key === 'c' && extractedText) {
+                copyText();
+            }
+        });
+    }
+
+    function setupDragAndDrop() {
+        // Enhanced drag and drop with better visual feedback
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, { passive: false });
+        });
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, { passive: true });
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, { passive: true });
+        });
+        
+        dropArea.addEventListener('drop', handleDrop, false);
+    }
+
     function preventDefaults(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -92,124 +159,583 @@ document.addEventListener('DOMContentLoaded', function() {
     function handleFileSelect() {
         if (imageFile.files.length > 0) {
             const file = imageFile.files[0];
+            currentImageFile = file;
             
-            // Enhanced file validation with more supported formats
-            const supportedTypes = [
-                'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp',
-                'image/webp', 'image/tiff', 'image/tif', 'image/svg+xml'
-            ];
-            
-            const supportedExtensions = /\.(jpg|jpeg|png|gif|bmp|webp|tiff|tif|svg)$/i;
-            
-            if (!supportedTypes.includes(file.type) && !supportedExtensions.test(file.name)) {
-                selectedFile.innerHTML = `
-                    <div class="error-message">
-                        <span class="error-icon">❌</span>
-                        <p>Unsupported file format. Please select an image file.</p>
-                        <small>Supported formats: JPG, PNG, GIF, BMP, WebP, TIFF, SVG</small>
-                    </div>
-                `;
-                imagePreviewContainer.classList.remove('show');
-                extractTextBtn.disabled = true;
+            // Enhanced file validation
+            const validationResult = validateImageFile(file);
+            if (!validationResult.valid) {
+                showFileError(validationResult.error, validationResult.suggestions);
                 return;
             }
             
-            // Enhanced file size validation (50MB limit)
-            const maxSize = 50 * 1024 * 1024; // 50MB
-            if (file.size > maxSize) {
-                selectedFile.innerHTML = `
-                    <div class="error-message">
-                        <span class="error-icon">❌</span>
-                        <p>File too large. Maximum size is 50MB.</p>
-                        <small>Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB</small>
-                    </div>
-                `;
-                imagePreviewContainer.classList.remove('show');
-                extractTextBtn.disabled = true;
-                return;
-            }
+            // Show enhanced file info
+            displayFileInfo(file);
             
-            // Enhanced file info display
-            const fileSize = formatFileSize(file.size);
-            const estimatedProcessingTime = estimateProcessingTime(file.size, file.type);
-            
-            selectedFile.innerHTML = `
-                <div class="file-info-enhanced">
-                    <div class="file-header">
-                        <h4>🖼️ ${file.name}</h4>
-                        <span class="file-size">${fileSize}</span>
-                    </div>
-                    <div class="file-details">
-                        <div class="detail-item">
-                            <span class="label">📁 Type:</span>
-                            <span class="value">${file.type || 'Image File'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="label">⏱️ Processing Time:</span>
-                            <span class="value">${estimatedProcessingTime}</span>
-                        </div>
-                    </div>
-                    <div class="status-indicator">
-                        <span class="status-dot ready"></span>
-                        <span class="status-text">Ready to extract text</span>
-                    </div>
-                </div>
-            `;
-            
-            // Enhanced image preview with loading state
+            // Show image preview
             showImagePreview(file);
             
-            // Enable extract button with animation
-            extractTextBtn.disabled = false;
-            extractTextBtn.classList.add('pulse-animation');
-            setTimeout(() => extractTextBtn.classList.remove('pulse-animation'), 1000);
+            // Enable extract button
+            enableExtractionButton();
         }
     }
 
+    function validateImageFile(file) {
+        const supportedTypes = [
+            'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp',
+            'image/webp', 'image/tiff', 'image/tif', 'image/svg+xml'
+        ];
+        
+        const supportedExtensions = /\.(jpg|jpeg|png|gif|bmp|webp|tiff|tif|svg)$/i;
+        
+        // Check file type
+        if (!supportedTypes.includes(file.type) && !supportedExtensions.test(file.name)) {
+            return {
+                valid: false,
+                error: 'Unsupported file format',
+                suggestions: [
+                    'Please select an image file',
+                    'Supported formats: JPG, PNG, GIF, BMP, WebP, TIFF, SVG',
+                    'Try converting your file to one of these formats'
+                ]
+            };
+        }
+        
+        // Check file size (50MB limit)
+        const maxSize = 50 * 1024 * 1024;
+        if (file.size > maxSize) {
+            return {
+                valid: false,
+                error: `File too large (${(file.size / (1024 * 1024)).toFixed(2)}MB)`,
+                suggestions: [
+                    'Maximum file size is 50MB',
+                    'Try compressing your image',
+                    'Use a lower resolution version',
+                    'Crop the image to include only the text area'
+                ]
+            };
+        }
+        
+        // Check minimum size
+        if (file.size < 1000) {
+            return {
+                valid: false,
+                error: 'File too small or corrupted',
+                suggestions: [
+                    'The file appears to be corrupted or incomplete',
+                    'Try uploading a different image',
+                    'Make sure the file downloaded completely'
+                ]
+            };
+        }
+        
+        return { valid: true };
+    }
+
+    function showFileError(error, suggestions = []) {
+        selectedFile.innerHTML = `
+            <div class="error-message">
+                <div class="error-header">
+                    <span class="error-icon">❌</span>
+                    <h4>${error}</h4>
+                </div>
+                ${suggestions.length > 0 ? `
+                    <div class="error-suggestions">
+                        <h5>💡 Suggestions:</h5>
+                        <ul>
+                            ${suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+                <button class="btn btn-secondary btn-sm" onclick="document.getElementById('imageFile').value = ''; document.getElementById('selectedFile').innerHTML = '<p>No file selected</p>';">
+                    <i class="fas fa-undo"></i> Try Again
+                </button>
+            </div>
+        `;
+        
+        imagePreviewContainer.style.display = 'none';
+        extractTextBtn.disabled = true;
+    }
+
+    function displayFileInfo(file) {
+        const fileSize = formatFileSize(file.size);
+        const estimatedTime = estimateProcessingTime(file.size, file.type);
+        
+        selectedFile.innerHTML = `
+            <div class="file-info-enhanced">
+                <div class="file-header">
+                    <div class="file-icon">🖼️</div>
+                    <div class="file-details">
+                        <h4>${file.name}</h4>
+                        <div class="file-meta">
+                            <span class="file-size">📏 ${fileSize}</span>
+                            <span class="file-type">📁 ${file.type || 'Image File'}</span>
+                            <span class="processing-time">⏱️ ~${estimatedTime}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="file-status">
+                    <div class="status-indicator ready">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Ready for processing</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     function showImagePreview(file) {
-        // Show loading state first
+        // Reset preview
         imagePreview.src = '';
         imagePreview.style.opacity = '0.5';
-        imagePreviewContainer.classList.add('show');
+        imageInfo.innerHTML = '<div class="loading-info">Loading preview...</div>';
+        imagePreviewContainer.style.display = 'block';
         
         const reader = new FileReader();
         reader.onload = function(e) {
             imagePreview.src = e.target.result;
             imagePreview.style.opacity = '1';
             
-            // Add image dimensions info
+            // Get image dimensions
             const img = new Image();
             img.onload = function() {
-                const dimensionsInfo = document.createElement('div');
-                dimensionsInfo.className = 'image-dimensions';
-                dimensionsInfo.innerHTML = `
-                    <small>📐 ${this.width} × ${this.height} pixels</small>
+                imageInfo.innerHTML = `
+                    <div class="image-details">
+                        <div class="detail-item">
+                            <i class="fas fa-expand-arrows-alt"></i>
+                            <span>${this.width} × ${this.height} pixels</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-palette"></i>
+                            <span>${getImageColorInfo(this)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-compress-arrows-alt"></i>
+                            <span>Aspect ratio: ${(this.width / this.height).toFixed(2)}:1</span>
+                        </div>
+                    </div>
                 `;
-                
-                // Remove existing dimensions info if any
-                const existing = imagePreviewContainer.querySelector('.image-dimensions');
-                if (existing) existing.remove();
-                
-                imagePreviewContainer.appendChild(dimensionsInfo);
             };
             img.src = e.target.result;
         };
         
         reader.onerror = function() {
-            selectedFile.innerHTML = `
-                <div class="error-message">
-                    <span class="error-icon">❌</span>
-                    <p>Failed to read image file.</p>
-                    <small>Please try a different image</small>
-                </div>
-            `;
-            imagePreviewContainer.classList.remove('show');
-            extractTextBtn.disabled = true;
+            showFileError('Could not read image file', ['The file may be corrupted', 'Try a different image']);
         };
         
         reader.readAsDataURL(file);
     }
 
+    function getImageColorInfo(img) {
+        // Simple color detection based on image properties
+        if (img.width * img.height > 1000000) {
+            return 'High resolution';
+        } else if (img.width * img.height > 100000) {
+            return 'Medium resolution';
+        } else {
+            return 'Low resolution';
+        }
+    }
+
+    function enableExtractionButton() {
+        extractTextBtn.disabled = false;
+        extractTextBtn.innerHTML = '<i class="fas fa-magic"></i> Extract Text';
+        extractTextBtn.classList.add('pulse-animation');
+        setTimeout(() => extractTextBtn.classList.remove('pulse-animation'), 1000);
+    }
+
+    function removeImage() {
+        imageFile.value = '';
+        currentImageFile = null;
+        ocrData = null;
+        
+        selectedFile.innerHTML = '<p>No file selected</p>';
+        imagePreviewContainer.style.display = 'none';
+        
+        extractTextBtn.disabled = true;
+        extractTextBtn.innerHTML = '<i class="fas fa-magic"></i> Extract Text';
+        
+        resetResults();
+    }
+
+    async function handleSubmit(e) {
+        e.preventDefault();
+        
+        if (!currentImageFile || extractTextBtn.disabled) {
+            return;
+        }
+        
+        // Abort any ongoing processing
+        if (processingAbortController) {
+            processingAbortController.abort();
+        }
+        
+        processingAbortController = new AbortController();
+        
+        try {
+            showProcessingState();
+            const result = await processImage(currentImageFile);
+            handleSuccessfulExtraction(result);
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                handleExtractionError(error);
+            }
+        } finally {
+            hideProcessingState();
+        }
+    }
+
+    function showProcessingState() {
+        conversionProgress.style.display = 'block';
+        extractTextBtn.disabled = true;
+        extractTextBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        
+        // Reset progress
+        progressFill.style.width = '0%';
+        progressPercentage.textContent = '0%';
+        
+        // Simulate progress with steps
+        simulateProgress();
+    }
+
+    function simulateProgress() {
+        const steps = document.querySelectorAll('.progress-steps .step');
+        let currentStep = 0;
+        let progress = 0;
+        
+        const progressInterval = setInterval(() => {
+            progress += Math.random() * 15 + 5; // Random progress increment
+            
+            if (progress > 100) progress = 100;
+            
+            progressFill.style.width = progress + '%';
+            progressPercentage.textContent = Math.round(progress) + '%';
+            
+            // Update steps
+            if (progress > 25 && currentStep < 1) {
+                steps[0].classList.add('completed');
+                steps[1].classList.add('active');
+                currentStep = 1;
+                progressStatus.textContent = 'Analyzing image content...';
+            } else if (progress > 50 && currentStep < 2) {
+                steps[1].classList.add('completed');
+                steps[2].classList.add('active');
+                currentStep = 2;
+                progressStatus.textContent = 'Extracting text using OCR...';
+            } else if (progress > 80 && currentStep < 3) {
+                steps[2].classList.add('completed');
+                steps[3].classList.add('active');
+                currentStep = 3;
+                progressStatus.textContent = 'Finalizing results...';
+            }
+            
+            if (progress >= 100) {
+                clearInterval(progressInterval);
+                setTimeout(() => {
+                    steps[3].classList.add('completed');
+                    progressStatus.textContent = 'Processing complete!';
+                }, 500);
+            }
+        }, 200);
+    }
+
+    async function processImage(file) {
+        const formData = new FormData();
+        formData.append('image', file);
+        
+        // Add processing options
+        const enhanceImage = document.getElementById('enhanceImage')?.checked;
+        const preprocessImage = document.getElementById('preprocessImage')?.checked;
+        
+        if (enhanceImage) formData.append('enhance', 'true');
+        if (preprocessImage) formData.append('preprocess', 'true');
+        
+        const response = await fetch('/api/image-to-text', {
+            method: 'POST',
+            body: formData,
+            signal: processingAbortController.signal
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `Server error (${response.status})`);
+        }
+        
+        return await response.json();
+    }
+
+    function handleSuccessfulExtraction(data) {
+        extractedText = data.text || '';
+        ocrData = data;
+        
+        if (!extractedText.trim()) {
+            throw new Error('No text could be extracted from this image');
+        }
+        
+        displayResult(data);
+        updateStats(data);
+        enableResultActions();
+        
+        showNotification('✅ Text extraction completed successfully!', 'success');
+    }
+
+    function handleExtractionError(error) {
+        console.error('Extraction error:', error);
+        
+        const errorMessage = getDetailedErrorMessage(error);
+        
+        textResult.innerHTML = `
+            <div class="error-result">
+                <div class="error-icon">❌</div>
+                <h4>Extraction Failed</h4>
+                <p class="error-main">${errorMessage.main}</p>
+                ${errorMessage.suggestions.length > 0 ? `
+                    <div class="error-suggestions">
+                        <h5>💡 Try these solutions:</h5>
+                        <ul>
+                            ${errorMessage.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+                <div class="error-actions">
+                    <button class="btn btn-primary" onclick="document.getElementById('retryExtraction').click()">
+                        <i class="fas fa-redo"></i> Try Again
+                    </button>
+                    <button class="btn btn-secondary" onclick="location.reload()">
+                        <i class="fas fa-refresh"></i> Reload Page
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        retryExtractionBtn.disabled = false;
+        showNotification('❌ Text extraction failed', 'error');
+    }
+
+    function getDetailedErrorMessage(error) {
+        const message = error.message.toLowerCase();
+        
+        if (message.includes('tesseract') || message.includes('ocr service')) {
+            return {
+                main: 'OCR service is not available',
+                suggestions: [
+                    'The OCR engine (Tesseract) is not installed or configured properly',
+                    'Please contact the system administrator',
+                    'Try refreshing the page and attempting again',
+                    'Check if the server is running properly'
+                ]
+            };
+        } else if (message.includes('network') || message.includes('fetch')) {
+            return {
+                main: 'Network connection error',
+                suggestions: [
+                    'Check your internet connection',
+                    'Verify the server is running',
+                    'Try refreshing the page',
+                    'Wait a moment and try again'
+                ]
+            };
+        } else if (message.includes('no text') || message.includes('detect')) {
+            return {
+                main: 'No text could be detected in this image',
+                suggestions: [
+                    'Make sure the image contains clear, readable text',
+                    'Try using a higher resolution image',
+                    'Ensure the text is not too small or blurry',
+                    'Check that the image is not rotated or heavily skewed',
+                    'Try enhancing the image quality before upload'
+                ]
+            };
+        } else if (message.includes('format') || message.includes('corrupted')) {
+            return {
+                main: 'Image format or quality issue',
+                suggestions: [
+                    'The image file may be corrupted',
+                    'Try uploading the image in a different format (PNG, JPG)',
+                    'Make sure the image file is complete and not damaged',
+                    'Try using a different image'
+                ]
+            };
+        } else {
+            return {
+                main: error.message || 'An unexpected error occurred',
+                suggestions: [
+                    'Try refreshing the page',
+                    'Upload a different image',
+                    'Check your internet connection',
+                    'Contact support if the problem persists'
+                ]
+            };
+        }
+    }
+
+    function displayResult(data) {
+        const formattedText = formatTextForDisplay(data.text);
+        
+        textResult.innerHTML = `
+            <div class="result-content">
+                <div class="result-text" id="resultText">${formattedText}</div>
+                ${data.processing_method ? `
+                    <div class="processing-info">
+                        <small><i class="fas fa-info-circle"></i> Processed using: ${data.processing_method}</small>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+        
+        // Apply current format
+        formatText();
+    }
+
+    function updateStats(data) {
+        charCount.textContent = data.character_count || data.text.length;
+        wordCount.textContent = data.word_count || data.text.split(/\s+/).filter(w => w.length > 0).length;
+        
+        const confidence = data.confidence || 'medium';
+        confidenceLevel.textContent = confidence.charAt(0).toUpperCase() + confidence.slice(1);
+        
+        // Update confidence indicator color
+        confidenceIndicator.className = `stat confidence-indicator confidence-${confidence}`;
+    }
+
+    function enableResultActions() {
+        copyTextBtn.disabled = false;
+        downloadTextBtn.disabled = false;
+        retryExtractionBtn.disabled = false;
+    }
+
+    function resetResults() {
+        extractedText = '';
+        ocrData = null;
+        
+        textResult.innerHTML = `
+            <div class="placeholder-content">
+                <div class="placeholder-icon">
+                    <i class="fas fa-image"></i>
+                </div>
+                <h4>Ready to Extract Text</h4>
+                <p>Upload an image containing text to get started. The extracted text will appear here.</p>
+                <div class="supported-text-types">
+                    <div class="text-type">
+                        <i class="fas fa-book"></i>
+                        <span>Documents</span>
+                    </div>
+                    <div class="text-type">
+                        <i class="fas fa-newspaper"></i>
+                        <span>Articles</span>
+                    </div>
+                    <div class="text-type">
+                        <i class="fas fa-sticky-note"></i>
+                        <span>Notes</span>
+                    </div>
+                    <div class="text-type">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span>Forms</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        charCount.textContent = '0';
+        wordCount.textContent = '0';
+        confidenceLevel.textContent = '-';
+        confidenceIndicator.className = 'stat confidence-indicator';
+        
+        copyTextBtn.disabled = true;
+        downloadTextBtn.disabled = true;
+        retryExtractionBtn.disabled = true;
+    }
+
+    function hideProcessingState() {
+        conversionProgress.style.display = 'none';
+        extractTextBtn.disabled = false;
+        extractTextBtn.innerHTML = '<i class="fas fa-magic"></i> Extract Text';
+        
+        // Reset progress steps
+        const steps = document.querySelectorAll('.progress-steps .step');
+        steps.forEach(step => {
+            step.classList.remove('active', 'completed');
+        });
+    }
+
+    function formatText() {
+        if (!extractedText) return;
+        
+        const selectedFormat = document.querySelector('input[name="formatOption"]:checked')?.value || 'plain';
+        const resultText = document.getElementById('resultText');
+        
+        if (!resultText) return;
+        
+        if (selectedFormat === 'paragraphs') {
+            resultText.innerHTML = formatTextWithParagraphs(extractedText);
+        } else {
+            resultText.innerHTML = formatTextForDisplay(extractedText);
+        }
+    }
+
+    function formatTextWithParagraphs(text) {
+        return text
+            .split(/\n\s*\n/)
+            .filter(paragraph => paragraph.trim())
+            .map(paragraph => `<p>${paragraph.trim().replace(/\n/g, '<br>')}</p>`)
+            .join('');
+    }
+
+    function formatTextForDisplay(text) {
+        return text.replace(/\n/g, '<br>');
+    }
+
+    function retryExtraction() {
+        if (currentImageFile) {
+            handleSubmit({ preventDefault: () => {} });
+        }
+    }
+
+    function copyText() {
+        if (!extractedText) return;
+        
+        if (copyToClipboard(extractedText)) {
+            showButtonFeedback(copyTextBtn, '<i class="fas fa-check"></i> Copied!', '#48bb78');
+            showNotification('📋 Text copied to clipboard!', 'success');
+        } else {
+            showNotification('❌ Failed to copy text', 'error');
+        }
+    }
+
+    function downloadText() {
+        if (!extractedText) return;
+        
+        const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+        const filename = `extracted-text-${timestamp}.txt`;
+        
+        if (downloadTextAsFile(extractedText, filename)) {
+            showButtonFeedback(downloadTextBtn, '<i class="fas fa-check"></i> Downloaded!', '#48bb78');
+            showNotification('💾 Text file downloaded!', 'success');
+        } else {
+            showNotification('❌ Failed to download text', 'error');
+        }
+    }
+
+    function showButtonFeedback(button, content, color) {
+        const originalContent = button.innerHTML;
+        const originalBackground = button.style.backgroundColor;
+        
+        button.innerHTML = content;
+        button.style.backgroundColor = color;
+        
+        setTimeout(() => {
+            button.innerHTML = originalContent;
+            button.style.backgroundColor = originalBackground;
+        }, 2000);
+    }
+
+    function resetUI() {
+        selectedFile.innerHTML = '<p>No file selected</p>';
+        imagePreviewContainer.style.display = 'none';
+        conversionProgress.style.display = 'none';
+        resetResults();
+    }
+
+    // Utility functions
     function formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -219,488 +745,86 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function estimateProcessingTime(fileSize, fileType) {
-        // Base processing time estimation
         const sizeMB = fileSize / (1024 * 1024);
-        let baseTime = Math.max(5, Math.ceil(sizeMB * 3)); // 3 seconds per MB minimum 5 seconds
-        
-        // Adjust based on file type (some formats are more complex)
-        if (fileType?.includes('tiff') || fileType?.includes('bmp')) {
-            baseTime *= 1.5; // TIFF and BMP take longer
-        }
-        if (fileType?.includes('svg')) {
-            baseTime *= 0.8; // SVG is typically faster
-        }
-        
-        return baseTime > 60 ? `${Math.ceil(baseTime / 60)}m` : `${baseTime}s`;
-    }
-
-    function removeImage() {
-        imageFile.value = '';
-        selectedFile.innerHTML = '<p class="placeholder">No file selected</p>';
-        imagePreviewContainer.classList.remove('show');
-        extractTextBtn.disabled = true;
-        
-        // Clear any previous results
-        extractedText = '';
-        textResult.innerHTML = '<p class="placeholder">Extracted text will appear here...</p>';
-        copyTextBtn.disabled = true;
-        downloadTextBtn.disabled = true;
-        
-        showNotification('Image removed', 'info');
-    }
-
-    function handleSubmit(e) {
-        e.preventDefault();
-        
-        if (imageFile.files.length === 0) {
-            showNotification('Please select an image file first.', 'warning');
-            return;
-        }
-        
-        const file = imageFile.files[0];
-        console.log("🖼️ Processing image:", file.name, "Type:", file.type, "Size:", file.size);
-        
-        // Cancel any previous processing
-        if (processingAbortController) {
-            processingAbortController.abort();
-        }
-        processingAbortController = new AbortController();
-        
-        const formData = new FormData();
-        formData.append('image', file);
-        
-        // Reset previous results
-        extractedText = '';
-        
-        // Enhanced processing UI
-        showEnhancedProcessingState(file);
-        
-        // Disable buttons during processing
-        extractTextBtn.disabled = true;
-        copyTextBtn.disabled = true;
-        downloadTextBtn.disabled = true;
-        
-        console.log("📤 Sending request to /api/image-to-text");
-        
-        // Send to server with enhanced error handling
-        fetch('/api/image-to-text', {
-            method: 'POST',
-            body: formData,
-            signal: processingAbortController.signal
-        })
-        .then(response => {
-            console.log("📥 Server response status:", response.status);
-            
-            if (!response.ok) {
-                throw new Error(`Server error ${response.status}: ${response.statusText}`);
-            }
-            
-            return response.json();
-        })
-        .then(data => {
-            console.log("✅ Response data received");
-            handleSuccessfulExtraction(data);
-        })
-        .catch(error => {
-            if (error.name === 'AbortError') {
-                console.log('🛑 Request was cancelled');
-                showNotification('Processing was cancelled', 'info');
-            } else {
-                console.error('❌ Error processing image:', error);
-                handleExtractionError(error);
-            }
-        })
-        .finally(() => {
-            // Re-enable extract button
-            setTimeout(() => {
-                extractTextBtn.disabled = false;
-                conversionProgress.classList.remove('show');
-            }, 1000);
-        });
-    }
-
-    function showEnhancedProcessingState(file) {
-        conversionProgress.classList.add('show');
-        progressFill.style.width = '0%';
-        progressStatus.textContent = 'Analyzing image...';
-        
-        textResult.innerHTML = `
-            <div class="processing-indicator">
-                <div class="processing-spinner"></div>
-                <div class="processing-text">
-                    <h4>🖼️ Processing ${file.name}</h4>
-                    <p>Extracting text from image... Please wait</p>
-                    <small>Using advanced OCR technology</small>
-                </div>
-            </div>
-        `;
-        
-        // Enhanced progress simulation
-        simulateEnhancedProgress();
-    }
-
-    function simulateEnhancedProgress() {
-        const stages = [
-            { progress: 15, text: 'Uploading image...', duration: 800 },
-            { progress: 30, text: 'Analyzing image quality...', duration: 1200 },
-            { progress: 50, text: 'Detecting text regions...', duration: 1500 },
-            { progress: 70, text: 'Running OCR analysis...', duration: 2000 },
-            { progress: 85, text: 'Processing text data...', duration: 1000 },
-            { progress: 95, text: 'Finalizing results...', duration: 500 }
-        ];
-        
-        let currentStage = 0;
-        
-        function nextStage() {
-            if (currentStage < stages.length) {
-                const stage = stages[currentStage];
-                progressFill.style.width = `${stage.progress}%`;
-                progressStatus.textContent = stage.text;
-                
-                setTimeout(() => {
-                    currentStage++;
-                    nextStage();
-                }, stage.duration);
-            }
-        }
-        
-        nextStage();
-    }
-
-    function handleSuccessfulExtraction(data) {
-        if (data.error) {
-            throw new Error(data.error);
-        }
-        
-        // Complete progress
-        progressFill.style.width = '100%';
-        progressStatus.textContent = 'Text extraction complete!';
-        
-        // Store the raw text
-        extractedText = data.text || '';
-        
-        if (!extractedText.trim()) {
-            textResult.innerHTML = `
-                <div class="no-text-found">
-                    <div class="info-icon">ℹ️</div>
-                    <h4>No Text Found</h4>
-                    <p>No readable text was detected in this image.</p>
-                    <small>Try with a clearer image or one containing more text</small>
-                </div>
-            `;
-            
-            showNotification('No text found in the image', 'warning');
-        } else {
-            // Display result with enhanced formatting
-            displayEnhancedResult(data);
-            
-            // Enable action buttons
-            copyTextBtn.disabled = false;
-            downloadTextBtn.disabled = false;
-            
-            showNotification('Text successfully extracted from image!', 'success');
-        }
-        
-        // Hide progress after delay
-        setTimeout(() => {
-            conversionProgress.classList.remove('show');
-        }, 2000);
-    }
-
-    function handleExtractionError(error) {
-        progressFill.style.width = '100%';
-        progressFill.style.background = 'linear-gradient(90deg, #e53e3e, #fc8181)';
-        progressStatus.textContent = 'Extraction failed';
-        
-        const errorMessage = getErrorMessage(error);
-        
-        textResult.innerHTML = `
-            <div class="error-state">
-                <div class="error-icon">❌</div>
-                <h4>Extraction Failed</h4>
-                <p>${errorMessage}</p>
-                <div class="error-suggestions">
-                    <h5>💡 Try these suggestions:</h5>
-                    <ul>
-                        <li>Ensure the image contains clear, readable text</li>
-                        <li>Try a higher resolution image</li>
-                        <li>Check that the text isn't too small or blurry</li>
-                        <li>Use a supported image format (JPG, PNG, etc.)</li>
-                    </ul>
-                </div>
-                <button class="retry-btn" onclick="location.reload()">Try Again</button>
-            </div>
-        `;
-        
-        showNotification(errorMessage, 'error');
-        
-        setTimeout(() => {
-            conversionProgress.classList.remove('show');
-            progressFill.style.background = '';
-        }, 3000);
-    }
-
-    function getErrorMessage(error) {
-        if (error.message.includes('Server error 500')) {
-            return 'Server processing error. The image may be corrupted or in an unsupported format.';
-        }
-        if (error.message.includes('Server error 413')) {
-            return 'Image file is too large. Please use a smaller image.';
-        }
-        if (error.message.includes('Server error 415')) {
-            return 'Unsupported image format. Please use JPG, PNG, or other standard formats.';
-        }
-        if (error.message.includes('timeout')) {
-            return 'Processing timed out. Please try with a smaller or simpler image.';
-        }
-        return `Processing failed: ${error.message}`;
-    }
-
-    function displayEnhancedResult(data) {
-        // Enhanced result display with metadata
-        const wordCount = extractedText.split(/\s+/).filter(word => word.length > 0).length;
-        const charCount = extractedText.length;
-        const estimatedReadingTime = Math.ceil(wordCount / 200);
-        
-        textResult.innerHTML = `
-            <div class="result-header">
-                <div class="result-stats">
-                    <div class="stat-item">
-                        <span class="stat-value">${wordCount}</span>
-                        <span class="stat-label">Words</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value">${charCount}</span>
-                        <span class="stat-label">Characters</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-value">${estimatedReadingTime}m</span>
-                        <span class="stat-label">Read Time</span>
-                    </div>
-                </div>
-            </div>
-            <div class="result-content" data-raw-text="${encodeURIComponent(extractedText)}">
-                ${formatTextForDisplay(extractedText)}
-            </div>
-        `;
-        
-        // Apply current format option
-        formatText();
-    }
-
-    function formatText() {
-        if (!extractedText) return;
-        
-        const resultContent = document.querySelector('.result-content');
-        if (!resultContent) return;
-        
-        let selectedFormat = 'plain';
-        
-        // Get selected format option
-        for (const option of formatOptions) {
-            if (option.checked) {
-                selectedFormat = option.value;
-                break;
-            }
-        }
-        
-        let formattedText = extractedText;
-        
-        switch (selectedFormat) {
-            case 'paragraphs':
-                formattedText = formatTextWithParagraphs(extractedText);
-                break;
-            case 'lines':
-                formattedText = extractedText.split('\n')
-                    .filter(line => line.trim())
-                    .map(line => `<p class="text-line">${line.trim()}</p>`)
-                    .join('');
-                break;
-            case 'plain':
-            default:
-                formattedText = `<p class="text-plain">${extractedText.replace(/\n/g, '<br>')}</p>`;
-                break;
-        }
-        
-        resultContent.innerHTML = formattedText;
-    }
-
-    function formatTextWithParagraphs(text) {
-        // Enhanced paragraph formatting
-        if (!text || text.trim() === '') return '<p class="placeholder">No text available</p>';
-        
-        // Clean up the text
-        text = text.trim()
-            .replace(/\s+/g, ' ')
-            .replace(/\.\s*\.\s*/g, '. ');
-        
-        // Split into paragraphs using various strategies
-        let paragraphs = [];
-        
-        // First try splitting on double line breaks
-        const naturalParagraphs = text.split(/\n\s*\n/);
-        
-        if (naturalParagraphs.length > 1) {
-            paragraphs = naturalParagraphs;
-        } else {
-            // Fallback to sentence-based grouping
-            const sentences = text.split(/(?<=[.!?])\s+(?=[A-Z])/);
-            const targetLength = Math.max(150, text.length / Math.max(3, Math.floor(sentences.length / 3)));
-            
-            let currentParagraph = '';
-            
-            sentences.forEach((sentence, index) => {
-                currentParagraph += (currentParagraph ? ' ' : '') + sentence;
-                
-                if (currentParagraph.length >= targetLength || index === sentences.length - 1) {
-                    paragraphs.push(currentParagraph.trim());
-                    currentParagraph = '';
-                }
-            });
-        }
-        
-        return paragraphs
-            .filter(p => p.trim())
-            .map((paragraph, index) => {
-                const className = index % 2 === 0 ? 'paragraph-even' : 'paragraph-odd';
-                return `<p class="${className}">${paragraph.trim()}</p>`;
-            })
-            .join('\n');
-    }
-
-    function formatTextForDisplay(text) {
-        // Default formatting for initial display
-        return formatTextWithParagraphs(text);
-    }
-
-    function copyText() {
-        if (copyToClipboard(extractedText)) {
-            showNotification('Text copied to clipboard!', 'success');
-            
-            // Visual feedback on button
-            copyTextBtn.classList.add('copied');
-            setTimeout(() => copyTextBtn.classList.remove('copied'), 1000);
-        }
-    }
-
-    function downloadText() {
-        if (extractedText) {
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const filename = `extracted-text-${timestamp}.txt`;
-            downloadTextAsFile(extractedText, filename);
-            
-            showNotification('Text downloaded successfully!', 'success');
-        }
+        if (sizeMB < 1) return '1-2 seconds';
+        if (sizeMB < 5) return '2-5 seconds';
+        if (sizeMB < 15) return '5-10 seconds';
+        return '10-20 seconds';
     }
 
     function copyToClipboard(text) {
-        if (!text) {
-            showNotification('No text to copy', 'warning');
-            return false;
+        if (navigator.clipboard && window.isSecureContext) {
+            return navigator.clipboard.writeText(text).then(() => true).catch(() => false);
         }
         
-        // Enhanced clipboard functionality with fallbacks
-        if (navigator.clipboard && window.isSecureContext) {
-            return navigator.clipboard.writeText(text).then(() => {
-                return true;
-            }).catch(err => {
-                console.error('Clipboard API failed:', err);
-                return fallbackCopyToClipboard(text);
-            });
-        } else {
-            return fallbackCopyToClipboard(text);
-        }
-    }
-
-    function fallbackCopyToClipboard(text) {
+        // Fallback method
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        
         try {
-            const textArea = document.createElement('textarea');
-            textArea.value = text;
-            textArea.style.cssText = `
-                position: fixed;
-                top: -1000px;
-                left: -1000px;
-                width: 1px;
-                height: 1px;
-                opacity: 0;
-                pointer-events: none;
-            `;
-            
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            
             const successful = document.execCommand('copy');
-            document.body.removeChild(textArea);
-            
-            if (!successful) {
-                throw new Error('Copy command failed');
-            }
-            
-            return true;
+            document.body.removeChild(textarea);
+            return successful;
         } catch (err) {
-            console.error('Fallback copy failed:', err);
-            showNotification('Failed to copy text. Please select and copy manually.', 'error');
+            console.error('Error copying text:', err);
+            document.body.removeChild(textarea);
             return false;
         }
     }
 
     function downloadTextAsFile(text, filename) {
         try {
-            const BOM = '\uFEFF';
-            const blob = new Blob([BOM + text], { 
-                type: 'text/plain;charset=utf-8' 
-            });
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
             
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = filename;
-            link.style.display = 'none';
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
             
-            document.body.appendChild(link);
-            link.click();
+            document.body.appendChild(a);
+            a.click();
             
-            setTimeout(() => {
-                document.body.removeChild(link);
-                URL.revokeObjectURL(link.href);
-            }, 100);
-            
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
             return true;
-        } catch (error) {
-            console.error('Download failed:', error);
-            showNotification('Failed to download file. Please try again.', 'error');
+        } catch (err) {
+            console.error('Error downloading file:', err);
             return false;
         }
     }
 
     function showNotification(message, type = 'info') {
+        // Create notification element
         const notification = document.createElement('div');
         notification.className = `notification notification-${type}`;
         notification.innerHTML = `
-            <div class="notification-content">
-                <span class="notification-icon">${getNotificationIcon(type)}</span>
-                <span class="notification-text">${message}</span>
-            </div>
+            <span class="notification-content">${message}</span>
+            <button class="notification-close">&times;</button>
         `;
         
+        // Add to page
         document.body.appendChild(notification);
         
-        setTimeout(() => notification.classList.add('show'), 10);
+        // Auto remove after 5 seconds
         setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => document.body.removeChild(notification), 300);
-        }, 4000);
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+        
+        // Close button
+        notification.querySelector('.notification-close').onclick = () => {
+            notification.remove();
+        };
     }
 
-    function getNotificationIcon(type) {
-        const icons = {
-            success: '✅',
-            error: '❌',
-            warning: '⚠️',
-            info: 'ℹ️'
-        };
-        return icons[type] || icons.info;
-    }
+    // Initialize idle state
+    resetUI();
 });
 
 // Enhanced CSS styles for Image-to-Text functionality

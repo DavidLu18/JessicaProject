@@ -34,16 +34,25 @@
             <div class="container">
                 <h2><i class="fas fa-image"></i> Image to Text Converter</h2>
                 <p>Extract text from images for IELTS writing practice and other English learning activities.</p>
+                
+                <!-- System Status Indicator -->
+                <div class="system-status" id="systemStatus">
+                    <div class="status-item">
+                        <span class="status-icon checking">🔄</span>
+                        <span class="status-text">Checking OCR service...</span>
+                    </div>
+                </div>
             </div>
         </section>
 
         <section class="image-uploader">
             <div class="container">
                 <div class="uploader-container">
+                    <!-- Enhanced File Upload Form -->
                     <form id="imageUploadForm" enctype="multipart/form-data">
                         <div class="file-upload-container">
                             <div class="file-upload-area" id="dropArea">
-                                <input type="file" id="imageFile" name="image" accept=".png,.jpg,.jpeg" class="file-input" />
+                                <input type="file" id="imageFile" name="image" accept=".png,.jpg,.jpeg,.gif,.bmp,.webp,.tiff,.svg" class="file-input" />
                                 <div class="upload-icon">
                                     <i class="fas fa-cloud-upload-alt"></i>
                                 </div>
@@ -54,48 +63,147 @@
                                         <i class="fas fa-folder-open"></i> Browse Files
                                     </button>
                                 </div>
-                                <p class="file-types">Supported formats: PNG, JPG, JPEG</p>
+                                <p class="file-types">Supported: PNG, JPG, JPEG, GIF, BMP, WebP, TIFF, SVG</p>
+                                <div class="upload-tips">
+                                    <div class="tip-item">
+                                        <i class="fas fa-lightbulb"></i>
+                                        <span>For best results, use high-resolution images with clear text</span>
+                                    </div>
+                                    <div class="tip-item">
+                                        <i class="fas fa-info-circle"></i>
+                                        <span>Maximum file size: 50MB</span>
+                                    </div>
+                                </div>
                             </div>
+                            
+                            <!-- Enhanced File Preview -->
                             <div class="selected-file" id="selectedFile">
                                 <p>No file selected</p>
                             </div>
+                            
                             <div class="image-preview-container" id="imagePreviewContainer">
-                                <img id="imagePreview" src="" alt="Image preview" />
-                                <button id="removeImage" class="btn btn-danger btn-sm">
-                                    <i class="fas fa-times"></i>
-                                </button>
+                                <div class="preview-header">
+                                    <h4>📷 Image Preview</h4>
+                                    <button id="removeImage" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-times"></i> Remove
+                                    </button>
+                                </div>
+                                <div class="preview-content">
+                                    <img id="imagePreview" src="" alt="Image preview" />
+                                    <div class="image-info" id="imageInfo"></div>
+                                </div>
                             </div>
                         </div>
                         
+                        <!-- Enhanced Upload Actions -->
                         <div class="upload-actions">
-                            <button type="submit" class="btn btn-primary" id="extractText" disabled>
-                                <i class="fas fa-exchange-alt"></i> Extract Text
+                            <button type="submit" class="btn btn-primary btn-large" id="extractText" disabled>
+                                <i class="fas fa-magic"></i> Extract Text
                             </button>
+                            <div class="processing-options">
+                                <label class="option-toggle">
+                                    <input type="checkbox" id="enhanceImage" checked>
+                                    <span class="slider"></span>
+                                    <span class="label-text">📈 Enhance image quality</span>
+                                </label>
+                                <label class="option-toggle">
+                                    <input type="checkbox" id="preprocessImage">
+                                    <span class="slider"></span>
+                                    <span class="label-text">🔧 Advanced preprocessing</span>
+                                </label>
+                            </div>
                         </div>
                     </form>
 
+                    <!-- Enhanced Progress Indicator -->
                     <div class="conversion-progress" id="conversionProgress">
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="progressFill"></div>
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill"></div>
+                            </div>
+                            <div class="progress-percentage" id="progressPercentage">0%</div>
+                        </div>
+                        <div class="progress-steps">
+                            <div class="step" id="step1">
+                                <div class="step-icon">📁</div>
+                                <div class="step-text">Uploading image</div>
+                            </div>
+                            <div class="step" id="step2">
+                                <div class="step-icon">🔍</div>
+                                <div class="step-text">Analyzing content</div>
+                            </div>
+                            <div class="step" id="step3">
+                                <div class="step-icon">✨</div>
+                                <div class="step-text">Extracting text</div>
+                            </div>
+                            <div class="step" id="step4">
+                                <div class="step-icon">✅</div>
+                                <div class="step-text">Processing complete</div>
+                            </div>
                         </div>
                         <p id="progressStatus">Processing image...</p>
                     </div>
                     
+                    <!-- Enhanced Result Container -->
                     <div class="result-container">
                         <div class="result-header">
-                            <h3>Extracted Text</h3>
-                            <div class="result-format-options">
-                                <label class="format-option">
-                                    <input type="radio" name="formatOption" value="plain" checked> Plain Text
-                                </label>
-                                <label class="format-option">
-                                    <input type="radio" name="formatOption" value="paragraphs"> Paragraphs
-                                </label>
+                            <h3><i class="fas fa-file-text"></i> Extracted Text</h3>
+                            <div class="result-controls">
+                                <div class="result-format-options">
+                                    <label class="format-option">
+                                        <input type="radio" name="formatOption" value="plain" checked> 
+                                        <span class="option-label">Plain Text</span>
+                                    </label>
+                                    <label class="format-option">
+                                        <input type="radio" name="formatOption" value="paragraphs"> 
+                                        <span class="option-label">Paragraphs</span>
+                                    </label>
+                                </div>
+                                <div class="result-stats" id="resultStats">
+                                    <span class="stat">
+                                        <i class="fas fa-font"></i>
+                                        <span id="charCount">0</span> chars
+                                    </span>
+                                    <span class="stat">
+                                        <i class="fas fa-comment"></i>
+                                        <span id="wordCount">0</span> words
+                                    </span>
+                                    <span class="stat confidence-indicator" id="confidenceIndicator">
+                                        <i class="fas fa-chart-bar"></i>
+                                        <span id="confidenceLevel">-</span>
+                                    </span>
+                                </div>
                             </div>
                         </div>
+                        
                         <div class="text-result" id="textResult">
-                            <p class="placeholder">Extracted text will appear here...</p>
+                            <div class="placeholder-content">
+                                <div class="placeholder-icon">
+                                    <i class="fas fa-image"></i>
+                                </div>
+                                <h4>Ready to Extract Text</h4>
+                                <p>Upload an image containing text to get started. The extracted text will appear here.</p>
+                                <div class="supported-text-types">
+                                    <div class="text-type">
+                                        <i class="fas fa-book"></i>
+                                        <span>Documents</span>
+                                    </div>
+                                    <div class="text-type">
+                                        <i class="fas fa-newspaper"></i>
+                                        <span>Articles</span>
+                                    </div>
+                                    <div class="text-type">
+                                        <i class="fas fa-sticky-note"></i>
+                                        <span>Notes</span>
+                                    </div>
+                                    <div class="text-type">
+                                        <i class="fas fa-clipboard-list"></i>
+                                        <span>Forms</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+                        
                         <div class="result-actions">
                             <button id="copyText" class="btn btn-secondary" disabled>
                                 <i class="fas fa-copy"></i> Copy Text
@@ -103,15 +211,19 @@
                             <button id="downloadText" class="btn btn-secondary" disabled>
                                 <i class="fas fa-download"></i> Download Text
                             </button>
+                            <button id="retryExtraction" class="btn btn-outline" disabled>
+                                <i class="fas fa-redo"></i> Try Different Method
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
+        <!-- Enhanced Tips Section -->
         <section class="ielts-tips">
             <div class="container">
-                <h3>IELTS Writing Practice Tips</h3>
+                <h3><i class="fas fa-graduation-cap"></i> IELTS Writing Practice Tips</h3>
                 <div class="tips-cards">
                     <div class="tip-card">
                         <div class="tip-icon">
@@ -119,6 +231,9 @@
                         </div>
                         <h4>Extract Questions</h4>
                         <p>Use this tool to extract IELTS writing questions from images and practice your responses.</p>
+                        <div class="tip-action">
+                            <span class="tip-badge">Best Practice</span>
+                        </div>
                     </div>
                     <div class="tip-card">
                         <div class="tip-icon">
@@ -126,13 +241,29 @@
                         </div>
                         <h4>Practice Writing</h4>
                         <p>After extracting text, write your response and then compare with model answers.</p>
+                        <div class="tip-action">
+                            <span class="tip-badge">Recommended</span>
+                        </div>
                     </div>
                     <div class="tip-card">
                         <div class="tip-icon">
-                            <i class="fas fa-check"></i>
+                            <i class="fas fa-check-double"></i>
                         </div>
-                        <h4>Review</h4>
-                        <p>Check your writing against extracted model answers to identify areas for improvement.</p>
+                        <h4>Quality Check</h4>
+                        <p>Always review extracted text for accuracy. OCR may miss some details in handwritten text.</p>
+                        <div class="tip-action">
+                            <span class="tip-badge">Important</span>
+                        </div>
+                    </div>
+                    <div class="tip-card">
+                        <div class="tip-icon">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                        <h4>Image Quality</h4>
+                        <p>Use high-resolution, well-lit images with clear text for best extraction results.</p>
+                        <div class="tip-action">
+                            <span class="tip-badge">Pro Tip</span>
+                        </div>
                     </div>
                 </div>
             </div>

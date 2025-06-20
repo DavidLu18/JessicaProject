@@ -608,7 +608,7 @@ def smart_combine_text_segments(segments, language):
 
 @app.route('/api/image-to-text', methods=['POST'])
 def image_to_text():
-    """Enhanced image-to-text with better error handling"""
+    """Enhanced image-to-text with better error handling and Tesseract configuration"""
     if 'image' not in request.files:
         return jsonify({'error': 'No image file provided'}), 400
     
@@ -627,26 +627,138 @@ def image_to_text():
             file_size_mb = os.path.getsize(filepath) / (1024 * 1024)
             log_request('/api/image-to-text', filename, file_size_mb)
             
-            # Process image
-            image = Image.open(filepath)
+            # Check if Tesseract is available
+            try:
+                # Test Tesseract installation
+                test_text = pytesseract.get_tesseract_version()
+                logger.info(f"Tesseract version: {test_text}")
+            except Exception as tesseract_error:
+                logger.error(f"Tesseract not available: {tesseract_error}")
+                return jsonify({
+                    'error': 'OCR service unavailable. Tesseract is not installed or configured properly.',
+                    'details': 'Please install Tesseract OCR: https://github.com/UB-Mannheim/tesseract/wiki'
+                }), 503
             
-            # Enhanced OCR with better configuration
-            custom_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!?;:\'"()\-\s'
-            text = pytesseract.image_to_string(image, config=custom_config)
-            
-            # Clean up the extracted text
-            text = text.strip()
-            if not text:
-                return jsonify({'error': 'No text could be detected in this image'}), 400
-            
-            logger.info(f"Image OCR successful: {len(text)} characters extracted")
-            
-            return jsonify({
-                'text': text,
-                'character_count': len(text),
-                'word_count': len(text.split()),
-                'confidence': 'medium'  # OCR confidence is generally lower than speech recognition
-            }), 200
+            # Process image with enhanced error handling
+            try:
+                image = Image.open(filepath)
+                
+                # Convert to RGB if necessary (for better OCR)
+                if image.mode != 'RGB':
+                    image = image.convert('RGB')
+                
+                # Multiple OCR configurations for better results
+                ocr_configs = [
+                    r'--oem 3 --psm 6',  # Default config
+                    r'--oem 3 --psm 3',  # Fully automatic page segmentation
+                    r'--oem 3 --psm 7',  # Single text line
+                    r'--oem 3 --psm 8',  # Single word
+                    r'--oem 3 --psm 11', # Sparse text
+                    r'--oem 3 --psm 13'  # Raw line
+                ]
+                
+                text = ""
+                best_config = None
+                
+                for config in ocr_configs:
+                    try:
+                        extracted_text = pytesseract.image_to_string(image, config=config, lang='eng')
+                        extracted_text = extracted_text.strip()
+                        
+                        if extracted_text and len(extracted_text) > len(text):
+                            text = extracted_text
+                            best_config = config
+                            
+                        # If we got decent text, break early
+                        if len(text) > 20:
+                            break
+                            
+                    except Exception as ocr_error:
+                        logger.warning(f"OCR config {config} failed: {ocr_error}")
+                        continue
+                
+                # If no text found with multiple configs, try image preprocessing
+                if not text:
+                    try:
+                        import cv2
+                        import numpy as np
+                        
+                        # Convert PIL to OpenCV format
+                        img_array = np.array(image)
+                        
+                        # Apply image preprocessing
+                        gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+                        
+                        # Apply different preprocessing techniques
+                        preprocessing_techniques = [
+                            lambda img: cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1],
+                            lambda img: cv2.medianBlur(img, 3),
+                            lambda img: cv2.GaussianBlur(img, (1, 1), 0),
+                        ]
+                        
+                        for technique in preprocessing_techniques:
+                            try:
+                                processed_img = technique(gray)
+                                processed_text = pytesseract.image_to_string(processed_img, config=r'--oem 3 --psm 6')
+                                processed_text = processed_text.strip()
+                                
+                                if processed_text and len(processed_text) > len(text):
+                                    text = processed_text
+                                    best_config = "Preprocessed image"
+                                    
+                                if len(text) > 20:
+                                    break
+                                    
+                            except Exception as preprocessing_error:
+                                logger.warning(f"Preprocessing technique failed: {preprocessing_error}")
+                                continue
+                                
+                    except ImportError:
+                        logger.info("OpenCV not available for image preprocessing")
+                    except Exception as preprocessing_error:
+                        logger.warning(f"Image preprocessing failed: {preprocessing_error}")
+                
+                # Final text processing
+                if text:
+                    # Clean up the extracted text
+                    import re
+                    text = re.sub(r'\n+', '\n', text)  # Remove excessive newlines
+                    text = re.sub(r' +', ' ', text)    # Remove excessive spaces
+                    text = text.strip()
+                    
+                    # Calculate confidence based on text length and quality
+                    confidence = 'low'
+                    if len(text) > 50 and len(text.split()) > 10:
+                        confidence = 'high'
+                    elif len(text) > 20 and len(text.split()) > 5:
+                        confidence = 'medium'
+                    
+                    logger.info(f"Image OCR successful: {len(text)} characters extracted using {best_config}")
+                    
+                    return jsonify({
+                        'text': text,
+                        'character_count': len(text),
+                        'word_count': len(text.split()),
+                        'confidence': confidence,
+                        'processing_method': best_config or 'Standard OCR'
+                    }), 200
+                else:
+                    return jsonify({
+                        'error': 'No text could be detected in this image',
+                        'suggestions': [
+                            'Ensure the image contains clear, readable text',
+                            'Try a higher resolution image',
+                            'Make sure the text is not too small or blurry',
+                            'Check that the image is not rotated or skewed'
+                        ]
+                    }), 400
+                    
+            except Exception as image_error:
+                logger.error(f"Image processing error: {str(image_error)}")
+                return jsonify({
+                    'error': 'Error processing image',
+                    'details': 'The image file may be corrupted or in an unsupported format'
+                }), 500
             
         except Exception as e:
             logger.error(f"Image processing error: {str(e)}")
@@ -656,7 +768,11 @@ def image_to_text():
             if os.path.exists(filepath):
                 os.remove(filepath)
     
-    return jsonify({'error': 'Unsupported file type. Please use PNG, JPG or JPEG files.'}), 400
+    return jsonify({
+        'error': 'Unsupported file type',
+        'supported_formats': ['PNG', 'JPG', 'JPEG'],
+        'details': 'Please upload an image file in one of the supported formats'
+    }), 400
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -775,11 +891,16 @@ if __name__ == '__main__':
         print("🔒 SSL certificate loaded successfully")
         print("🎤 Microphone access will work properly now")
         
+        # Configure minimal logging for cleaner terminal
+        import logging
+        log = logging.getLogger('werkzeug')
+        log.setLevel(logging.ERROR)
+        
         # Run with SSL
         app.run(
             host='0.0.0.0',
             port=5000,
-            debug=True,
+            debug=False,  # Disable debug mode for cleaner output
             ssl_context=context,
             threaded=True
         )
@@ -790,10 +911,15 @@ if __name__ == '__main__':
         print("⚠️ Note: Microphone may not work without HTTPS")
         print("💡 For production, use a proper reverse proxy with SSL")
         
+        # Configure minimal logging for cleaner terminal
+        import logging
+        log = logging.getLogger('werkzeug')
+        log.setLevel(logging.ERROR)
+        
         # Fallback to HTTP
         app.run(
             host='0.0.0.0',
             port=5000,
-            debug=True,
+            debug=False,  # Disable debug mode for cleaner output
             threaded=True
         )
